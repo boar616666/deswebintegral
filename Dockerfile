@@ -1,30 +1,13 @@
-# Etapa 1: Build Angular App
-FROM node:18-alpine as builder
-
-# Crear directorio de trabajo
+# stage 1: build the react app
+FROM node:18 as builder
 WORKDIR /app
-
-# Copiar los archivos del proyecto
-COPY . .
-
-# Instalar dependencias
+COPY package*.json ./
 RUN npm install
+COPY . .
+RUN npm run build
 
-# Construir la aplicación Angular
-RUN npm run build --prod
-
-# Etapa 2: Imagen Nginx para servir los archivos estáticos
+# stage 2: serve the app with nginx
 FROM nginx:alpine
-
-# Copiar el build al directorio estándar de Nginx
-COPY --from=builder /app/dist/mi-app /usr/share/nginx/html
-
-# Cambiar el puerto (opcional)
-# Esto edita el archivo de configuración default de nginx para usar el puerto 8080
-RUN sed -i 's/listen       80;/listen       8080;/' /etc/nginx/conf.d/default.conf
-
-# Exponer el puerto (coincide con el configurado arriba)
-EXPOSE 8080
-
-# Iniciar Nginx en modo foreground
+COPY --from=builder /app/build /usr/share/nginx/html
+EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
